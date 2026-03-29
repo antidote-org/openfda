@@ -34,12 +34,23 @@ export function AllergyCard({ allergy, onEdit, onRemove }: AllergyCardProps) {
             <Badge variant="secondary" className="text-xs shrink-0">
               {categoryLabel}
             </Badge>
+            {allergy.staffOnly && (
+              <Badge variant="outline" className="text-xs shrink-0">
+                Staff Only
+              </Badge>
+            )}
           </div>
 
           {allergy.reactions.length > 0 && (
             <p className="text-sm text-muted-foreground mt-1 truncate">
               {allergy.reactions.slice(0, 3).join(", ")}
               {allergy.reactions.length > 3 && " ..."}
+            </p>
+          )}
+
+          {allergy.remedy && (
+            <p className="text-xs text-muted-foreground mt-1 truncate">
+              Remedy: {allergy.remedy}
             </p>
           )}
         </div>

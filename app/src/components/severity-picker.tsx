@@ -5,7 +5,7 @@ import { SEVERITY_CONFIG } from "@/constants/severity";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
-const LEVELS: Severity[] = ["mild", "moderate", "severe", "life_threatening"];
+const LEVELS: Severity[] = ["unknown", "mild", "moderate", "severe", "life_threatening"];
 
 interface SeverityPickerProps {
   value: Severity;

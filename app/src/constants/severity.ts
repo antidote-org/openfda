@@ -4,6 +4,12 @@ export const SEVERITY_CONFIG: Record<
   Severity,
   { label: string; color: string; border: string; bg: string }
 > = {
+  unknown: {
+    label: "Unknown",
+    color: "text-gray-700",
+    border: "border-l-gray-400",
+    bg: "bg-gray-50",
+  },
   mild: {
     label: "Mild",
     color: "text-green-700",

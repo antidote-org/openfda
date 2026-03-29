@@ -6,6 +6,7 @@ import { SeverityPicker } from "./severity-picker";
 import { ReactionCheckboxes } from "./reaction-checkboxes";
 import { FdaInsightsPanel } from "./fda-insights-panel";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -51,9 +52,11 @@ export function DetailForm({
   const [reactions, setReactions] = useState<string[]>(
     initialData?.reactions ?? []
   );
+  const [remedy, setRemedy] = useState(initialData?.remedy ?? "");
   const [onset, setOnset] = useState<string>(
     initialData?.onsetTiming ?? "unknown"
   );
+  const [staffOnly, setStaffOnly] = useState(initialData?.staffOnly ?? false);
   const [notes, setNotes] = useState(initialData?.notes ?? "");
 
   const handleSave = () => {
@@ -63,7 +66,9 @@ export function DetailForm({
       category,
       severity,
       reactions,
+      remedy: remedy || undefined,
       onsetTiming: onset as Allergy["onsetTiming"],
+      staffOnly,
       notes: notes || undefined,
     });
     onOpenChange(false);
@@ -93,6 +98,15 @@ export function DetailForm({
               </p>
             )}
           </div>
+
+          {/* Staff Only */}
+          <Label className="flex items-center gap-2 text-sm cursor-pointer">
+            <Checkbox
+              checked={staffOnly}
+              onCheckedChange={(v) => setStaffOnly(v === true)}
+            />
+            Medical Staff Only
+          </Label>
 
           {/* Category */}
           {!selectedAllergen && (
@@ -131,6 +145,17 @@ export function DetailForm({
             selected={reactions}
             onChange={setReactions}
           />
+
+          {/* Remedy */}
+          <div className="space-y-1">
+            <Label className="text-sm font-medium">Remedy</Label>
+            <Textarea
+              value={remedy}
+              onChange={(e) => setRemedy(e.target.value)}
+              placeholder="e.g., Epipen, Benadryl 50mg, avoid exposure..."
+              rows={2}
+            />
+          </div>
 
           {/* Onset */}
           <div className="space-y-1">

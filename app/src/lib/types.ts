@@ -1,4 +1,4 @@
-export type Severity = "mild" | "moderate" | "severe" | "life_threatening";
+export type Severity = "unknown" | "mild" | "moderate" | "severe" | "life_threatening";
 export type AllergyCategory = "drug" | "food" | "custom";
 
 export interface Allergy {
@@ -8,7 +8,9 @@ export interface Allergy {
   category: AllergyCategory;
   severity: Severity;
   reactions: string[];
+  remedy?: string;
   onsetTiming?: "immediate" | "delayed" | "unknown";
+  staffOnly?: boolean;
   notes?: string;
   createdAt: string;
   updatedAt: string;
