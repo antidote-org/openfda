@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { Allergy, AllergenSearchResult, AllergyCategory, Severity } from "@/lib/types";
 import { SeverityPicker } from "./severity-picker";
 import { ReactionCheckboxes } from "./reaction-checkboxes";
 import { FdaInsightsPanel } from "./fda-insights-panel";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +19,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+
+const CATEGORY_LABELS: Record<AllergyCategory, string> = {
+  drug: "Drug",
+  food: "Food",
+  environmental: "Environmental",
+  custom: "Other",
+};
+
+/** Compact metadata line — joins non-empty parts with · */
+function metaLine(parts: (string | undefined)[]): string {
+  return parts.filter(Boolean).join(" · ");
+}
 
 interface DetailFormProps {
   open: boolean;
@@ -33,12 +47,46 @@ export function DetailForm({
   selectedAllergen,
   onSave,
 }: DetailFormProps) {
+  // Derive a stable key so state resets when the selection changes
+  const formKey = useMemo(
+    () =>
+      initialData?.id ??
+      selectedAllergen?.substanceName ??
+      "custom",
+    [initialData, selectedAllergen]
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
+            {initialData ? "Edit Allergy" : "Add Allergy"}
+          </DialogTitle>
+        </DialogHeader>
+        <DetailFormInner
+          key={formKey}
+          initialData={initialData}
+          selectedAllergen={selectedAllergen}
+          onSave={onSave}
+          onOpenChange={onOpenChange}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DetailFormInner({
+  initialData,
+  selectedAllergen,
+  onSave,
+  onOpenChange,
+}: Omit<DetailFormProps, "open">) {
   const source = initialData ?? selectedAllergen;
 
   const [name, setName] = useState(source?.name ?? "");
-  const [substanceName] = useState(
-    initialData?.substanceName ?? selectedAllergen?.substanceName ?? ""
-  );
+  const substanceName =
+    initialData?.substanceName ?? selectedAllergen?.substanceName ?? "";
   const [category, setCategory] = useState<AllergyCategory>(
     source?.category ?? "drug"
   );
@@ -70,69 +118,97 @@ export function DetailForm({
     onOpenChange(false);
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {initialData ? "Edit Allergy" : "Add Allergy"}
-          </DialogTitle>
-        </DialogHeader>
+  // Build metadata strings from the selected allergen
+  const meta = selectedAllergen
+    ? metaLine([
+        selectedAllergen.dosageForm,
+        selectedAllergen.route,
+        selectedAllergen.strength,
+      ])
+    : "";
+  const provenance = selectedAllergen
+    ? metaLine([
+        selectedAllergen.manufacturer,
+        selectedAllergen.ndcCode
+          ? `NDC ${selectedAllergen.ndcCode}`
+          : undefined,
+      ])
+    : "";
 
-        <div className="space-y-5 py-2">
-          {/* Name */}
-          <div className="space-y-1">
-            <Label className="text-sm font-medium">Allergen</Label>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Allergen name"
-            />
+  return (
+    <div className="space-y-5 py-2">
+      {/* Allergen identity — structured card for FDA selections, editable input for custom */}
+      {selectedAllergen && !initialData ? (
+        <div className="space-y-1">
+          <Label className="text-sm font-medium">Allergen</Label>
+          <Card className="p-3 bg-muted/50 space-y-1">
+            <div className="flex items-start justify-between gap-2">
+              <span className="font-semibold text-sm">{name}</span>
+              <Badge variant="secondary" className="text-[11px] shrink-0">
+                {CATEGORY_LABELS[selectedAllergen.category]}
+              </Badge>
+            </div>
             {substanceName && substanceName !== name && (
-              <p className="text-xs text-muted-foreground">
-                Substance: {substanceName}
+              <p className="text-xs text-muted-foreground">{substanceName}</p>
+            )}
+            {meta && (
+              <p className="text-[11px] text-muted-foreground/70">{meta}</p>
+            )}
+            {provenance && (
+              <p className="text-[11px] text-muted-foreground/60">
+                {provenance}
               </p>
             )}
-          </div>
-
-          {/* Staff Only */}
-          <Label className="flex items-center gap-2 text-sm cursor-pointer">
-            <Checkbox
-              checked={staffOnly}
-              onCheckedChange={(v) => setStaffOnly(v === true)}
-            />
-            Medical Staff Only
-          </Label>
-
-          {/* Category */}
-          {!selectedAllergen && (
-            <div className="space-y-1">
-              <Label className="text-sm font-medium">Category</Label>
-              <RadioGroup
-                value={category}
-                onValueChange={(v) => setCategory(v as AllergyCategory)}
-                className="flex gap-4"
-              >
-                {(["drug", "food", "environmental", "custom"] as const).map(
-                  (cat) => (
-                    <Label
-                      key={cat}
-                      className="flex items-center gap-2 text-sm cursor-pointer"
-                    >
-                      <RadioGroupItem value={cat} />
-                      {cat === "drug"
-                        ? "Drug"
-                        : cat === "food"
-                          ? "Food"
-                          : cat === "environmental"
-                            ? "Environmental"
-                            : "Other"}
-                    </Label>
-                  )
-                )}
-              </RadioGroup>
-            </div>
+          </Card>
+        </div>
+      ) : (
+        <div className="space-y-1">
+          <Label className="text-sm font-medium">Allergen</Label>
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Allergen name"
+          />
+          {substanceName && substanceName !== name && (
+            <p className="text-xs text-muted-foreground">
+              Substance: {substanceName}
+            </p>
           )}
+        </div>
+      )}
+
+      {/* Staff Only */}
+      <Label className="flex items-center gap-2 text-sm cursor-pointer">
+        <Checkbox
+          checked={staffOnly}
+          onCheckedChange={(v) => setStaffOnly(v === true)}
+        />
+        Medical Staff Only
+      </Label>
+
+      {/* Category — only show for custom/edit without a pre-selected allergen */}
+      {!selectedAllergen && (
+        <div className="space-y-1">
+          <Label className="text-sm font-medium">Category</Label>
+          <RadioGroup
+            value={category}
+            onValueChange={(v) => setCategory(v as AllergyCategory)}
+            className="flex gap-4"
+          >
+            {(["drug", "food", "environmental", "custom"] as const).map(
+              (cat) => (
+                <Label
+                  key={cat}
+                  className="flex items-center gap-2 text-sm cursor-pointer"
+                >
+                  <RadioGroupItem value={cat} />
+                  {CATEGORY_LABELS[cat]}
+                </Label>
+              )
+            )}
+          </RadioGroup>
+        </div>
+      )}
 
           {/* Severity */}
           <SeverityPicker value={severity} onChange={setSeverity} />
@@ -209,7 +285,5 @@ export function DetailForm({
             </Button>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
   );
 }
