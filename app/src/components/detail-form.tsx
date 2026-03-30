@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Allergy, AllergyCategory, Severity } from "@/lib/types";
+import type { Allergy, AllergenSearchResult, AllergyCategory, Severity } from "@/lib/types";
 import { SeverityPicker } from "./severity-picker";
 import { ReactionCheckboxes } from "./reaction-checkboxes";
 import { FdaInsightsPanel } from "./fda-insights-panel";
@@ -22,11 +22,7 @@ interface DetailFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialData?: Allergy;
-  selectedAllergen?: {
-    name: string;
-    substanceName?: string;
-    category: AllergyCategory;
-  };
+  selectedAllergen?: AllergenSearchResult;
   onSave: (data: Omit<Allergy, "id" | "createdAt" | "updatedAt">) => void;
 }
 

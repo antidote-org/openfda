@@ -27,6 +27,15 @@ export interface AllergenSearchResult {
   substanceName: string;
   category: AllergyCategory;
   source: "ndc" | "label" | "food_event";
+  // Rich metadata (populated when available)
+  ndcCode?: string;
+  manufacturer?: string;
+  route?: string;
+  dosageForm?: string;
+  productType?: string;
+  strength?: string;
+  /** For food results — number of CAERS adverse event reports */
+  reportCount?: number;
 }
 
 export interface LabelWarningData {

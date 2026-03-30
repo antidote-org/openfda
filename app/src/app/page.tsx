@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Allergy, AllergyCategory } from "@/lib/types";
+import type { Allergy, AllergenSearchResult, AllergyCategory } from "@/lib/types";
 import { useAllergies } from "@/lib/hooks/use-allergies";
 import { AllergyList } from "@/components/allergy-list";
 import { AddAllergyPopover } from "@/components/add-allergy-popover";
@@ -25,7 +25,7 @@ export default function Home() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [editingAllergy, setEditingAllergy] = useState<Allergy | undefined>();
   const [selectedAllergen, setSelectedAllergen] = useState<
-    { name: string; substanceName?: string; category: AllergyCategory } | undefined
+    AllergenSearchResult | undefined
   >();
 
   // Delete confirmation
@@ -35,11 +35,7 @@ export default function Home() {
   // Cross-reactivity nudge
   const [nudgeSubstance, setNudgeSubstance] = useState<string | null>(null);
 
-  const handleSelect = (allergen: {
-    name: string;
-    substanceName?: string;
-    category: AllergyCategory;
-  }) => {
+  const handleSelect = (allergen: AllergenSearchResult) => {
     setEditingAllergy(undefined);
     setSelectedAllergen(allergen);
     setDetailOpen(true);

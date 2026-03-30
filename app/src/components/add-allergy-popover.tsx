@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { AllergyCategory } from "@/lib/types";
+import type { AllergenSearchResult } from "@/lib/types";
 import { useAllergenSearch } from "@/lib/hooks/use-allergen-search";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,14 +19,65 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Loader2 } from "lucide-react";
 
 interface AddAllergyPopoverProps {
-  onSelect: (allergen: {
-    name: string;
-    substanceName?: string;
-    category: AllergyCategory;
-  }) => void;
+  onSelect: (allergen: AllergenSearchResult) => void;
   onCustom: () => void;
+}
+
+/** Compact metadata line — joins non-empty parts with · */
+function metaLine(parts: (string | undefined)[]): string {
+  return parts.filter(Boolean).join(" · ");
+}
+
+/** Renders a single allergen result as a structured preview card */
+function AllergenResultItem({ item }: { item: AllergenSearchResult }) {
+  const isFda = item.source === "ndc" || item.source === "label";
+
+  // Subtitle: substance/generic name if different from display name
+  const subtitle =
+    item.genericName && item.genericName !== item.name
+      ? item.genericName
+      : item.substanceName !== item.name
+        ? item.substanceName
+        : undefined;
+
+  // Meta: route · dosage form · strength (drugs/environmental)
+  const meta = isFda
+    ? metaLine([item.dosageForm, item.route, item.strength])
+    : undefined;
+
+  // Bottom: manufacturer + NDC (drugs/environmental) or report count (food)
+  const bottom = isFda
+    ? metaLine([
+        item.manufacturer,
+        item.ndcCode ? `NDC ${item.ndcCode}` : undefined,
+      ])
+    : item.reportCount
+      ? `${item.reportCount.toLocaleString()} adverse event reports`
+      : undefined;
+
+  return (
+    <div className="flex flex-col gap-0.5 py-0.5">
+      <span className="text-sm font-medium leading-tight">{item.name}</span>
+      {subtitle && (
+        <span className="text-xs text-muted-foreground leading-tight">
+          {subtitle}
+        </span>
+      )}
+      {meta && (
+        <span className="text-[11px] text-muted-foreground/70 leading-tight">
+          {meta}
+        </span>
+      )}
+      {bottom && (
+        <span className="text-[11px] text-muted-foreground/60 leading-tight">
+          {bottom}
+        </span>
+      )}
+    </div>
+  );
 }
 
 export function AddAllergyPopover({
@@ -43,12 +94,8 @@ export function AddAllergyPopover({
     foodResults.length > 0 ||
     environmentalResults.length > 0;
 
-  const handleSelect = (
-    name: string,
-    substanceName: string,
-    category: AllergyCategory
-  ) => {
-    onSelect({ name, substanceName, category });
+  const handleSelect = (item: AllergenSearchResult) => {
+    onSelect(item);
     setOpen(false);
     setQuery("");
   };
@@ -60,19 +107,26 @@ export function AddAllergyPopover({
       >
         <span className="text-lg leading-none">+</span> Add Allergy
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="start">
+      <PopoverContent className="w-96 p-0" align="start">
         <Command shouldFilter={false}>
-          <CommandInput
-            placeholder="Search for an allergen..."
-            value={query}
-            onValueChange={setQuery}
-          />
-          <CommandList>
+          <div className="relative">
+            <CommandInput
+              placeholder="Search for an allergen..."
+              value={query}
+              onValueChange={setQuery}
+            />
             {isLoading && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <Loader2 className="size-4 animate-spin text-muted-foreground" />
+              </div>
+            )}
+          </div>
+          <CommandList>
+            {isLoading && !hasResults && (
               <div className="p-2 space-y-2">
-                <Skeleton className="h-5 w-full" />
-                <Skeleton className="h-5 w-3/4" />
-                <Skeleton className="h-5 w-1/2" />
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-3/4" />
+                <Skeleton className="h-8 w-1/2" />
               </div>
             )}
 
@@ -85,18 +139,9 @@ export function AddAllergyPopover({
                 {drugResults.map((item) => (
                   <CommandItem
                     key={`drug-${item.substanceName}`}
-                    onSelect={() =>
-                      handleSelect(item.name, item.substanceName, "drug")
-                    }
+                    onSelect={() => handleSelect(item)}
                   >
-                    <div className="flex flex-col">
-                      <span className="text-sm">{item.name}</span>
-                      {item.genericName && item.genericName !== item.name && (
-                        <span className="text-xs text-muted-foreground">
-                          {item.genericName}
-                        </span>
-                      )}
-                    </div>
+                    <AllergenResultItem item={item} />
                   </CommandItem>
                 ))}
               </CommandGroup>
@@ -109,23 +154,9 @@ export function AddAllergyPopover({
                   {environmentalResults.map((item) => (
                     <CommandItem
                       key={`env-${item.substanceName}`}
-                      onSelect={() =>
-                        handleSelect(
-                          item.name,
-                          item.substanceName,
-                          "environmental"
-                        )
-                      }
+                      onSelect={() => handleSelect(item)}
                     >
-                      <div className="flex flex-col">
-                        <span className="text-sm">{item.name}</span>
-                        {item.genericName &&
-                          item.genericName !== item.name && (
-                            <span className="text-xs text-muted-foreground">
-                              {item.genericName}
-                            </span>
-                          )}
-                      </div>
+                      <AllergenResultItem item={item} />
                     </CommandItem>
                   ))}
                 </CommandGroup>
@@ -140,11 +171,9 @@ export function AddAllergyPopover({
                   {foodResults.map((item) => (
                     <CommandItem
                       key={`food-${item.substanceName}`}
-                      onSelect={() =>
-                        handleSelect(item.name, item.substanceName, "food")
-                      }
+                      onSelect={() => handleSelect(item)}
                     >
-                      <span className="text-sm">{item.name}</span>
+                      <AllergenResultItem item={item} />
                     </CommandItem>
                   ))}
                 </CommandGroup>
