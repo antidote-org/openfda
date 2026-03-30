@@ -1,5 +1,5 @@
 export type Severity = "unknown" | "mild" | "moderate" | "severe" | "life_threatening";
-export type AllergyCategory = "drug" | "food" | "custom";
+export type AllergyCategory = "drug" | "food" | "environmental" | "custom";
 
 export interface Allergy {
   id: string;
@@ -21,16 +21,24 @@ export interface CountResult {
   count: number;
 }
 
-export interface DrugSearchResult {
+export interface AllergenSearchResult {
   name: string;
   genericName?: string;
   substanceName: string;
-  source: "ndc" | "label";
+  category: AllergyCategory;
+  source: "ndc" | "label" | "food_event";
 }
 
-export interface FoodSearchResult {
-  name: string;
-  industryName?: string;
+export interface LabelWarningData {
+  contraindications?: string;
+  warnings?: string;
+  adverseReactions?: string;
+}
+
+export interface AllergenInsights {
+  reactions: CountResult[];
+  totalEvents: number;
+  labelWarnings: LabelWarningData | null;
 }
 
 export interface OpenFDAResponse<T> {

@@ -19,7 +19,9 @@ export function AllergyCard({ allergy, onEdit, onRemove }: AllergyCardProps) {
       ? "Drug"
       : allergy.category === "food"
         ? "Food"
-        : "Other";
+        : allergy.category === "environmental"
+          ? "Environmental"
+          : "Other";
 
   return (
     <Card

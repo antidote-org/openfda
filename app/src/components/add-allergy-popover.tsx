@@ -35,9 +35,23 @@ export function AddAllergyPopover({
 }: AddAllergyPopoverProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const { drugResults, foodResults, isLoading } = useAllergenSearch(query);
+  const { drugResults, foodResults, environmentalResults, isLoading } =
+    useAllergenSearch(query);
 
-  const hasResults = drugResults.length > 0 || foodResults.length > 0;
+  const hasResults =
+    drugResults.length > 0 ||
+    foodResults.length > 0 ||
+    environmentalResults.length > 0;
+
+  const handleSelect = (
+    name: string,
+    substanceName: string,
+    category: AllergyCategory
+  ) => {
+    onSelect({ name, substanceName, category });
+    setOpen(false);
+    setQuery("");
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -68,55 +82,73 @@ export function AddAllergyPopover({
 
             {drugResults.length > 0 && (
               <CommandGroup heading="Drugs">
-                {drugResults.map((drug) => (
+                {drugResults.map((item) => (
                   <CommandItem
-                    key={`drug-${drug.substanceName}`}
-                    onSelect={() => {
-                      onSelect({
-                        name: drug.name,
-                        substanceName: drug.substanceName,
-                        category: "drug",
-                      });
-                      setOpen(false);
-                      setQuery("");
-                    }}
+                    key={`drug-${item.substanceName}`}
+                    onSelect={() =>
+                      handleSelect(item.name, item.substanceName, "drug")
+                    }
                   >
                     <div className="flex flex-col">
-                      <span className="text-sm">{drug.name}</span>
-                      {drug.genericName &&
-                        drug.genericName !== drug.name && (
-                          <span className="text-xs text-muted-foreground">
-                            {drug.genericName}
-                          </span>
-                        )}
+                      <span className="text-sm">{item.name}</span>
+                      {item.genericName && item.genericName !== item.name && (
+                        <span className="text-xs text-muted-foreground">
+                          {item.genericName}
+                        </span>
+                      )}
                     </div>
                   </CommandItem>
                 ))}
               </CommandGroup>
             )}
 
-            {drugResults.length > 0 && foodResults.length > 0 && (
-              <CommandSeparator />
+            {environmentalResults.length > 0 && (
+              <>
+                {drugResults.length > 0 && <CommandSeparator />}
+                <CommandGroup heading="Environmental">
+                  {environmentalResults.map((item) => (
+                    <CommandItem
+                      key={`env-${item.substanceName}`}
+                      onSelect={() =>
+                        handleSelect(
+                          item.name,
+                          item.substanceName,
+                          "environmental"
+                        )
+                      }
+                    >
+                      <div className="flex flex-col">
+                        <span className="text-sm">{item.name}</span>
+                        {item.genericName &&
+                          item.genericName !== item.name && (
+                            <span className="text-xs text-muted-foreground">
+                              {item.genericName}
+                            </span>
+                          )}
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </>
             )}
 
             {foodResults.length > 0 && (
-              <CommandGroup heading="Foods">
-                {foodResults.map((food) => (
-                  <CommandItem
-                    key={`food-${food.name}`}
-                    onSelect={() => {
-                      onSelect({
-                        name: food.name,
-                        category: "food",
-                      });
-                      setOpen(false);
-                      setQuery("");
-                    }}
-                  >
-                    <span className="text-sm">{food.name}</span>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
+              <>
+                {(drugResults.length > 0 ||
+                  environmentalResults.length > 0) && <CommandSeparator />}
+                <CommandGroup heading="Foods">
+                  {foodResults.map((item) => (
+                    <CommandItem
+                      key={`food-${item.substanceName}`}
+                      onSelect={() =>
+                        handleSelect(item.name, item.substanceName, "food")
+                      }
+                    >
+                      <span className="text-sm">{item.name}</span>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </>
             )}
 
             <CommandSeparator />

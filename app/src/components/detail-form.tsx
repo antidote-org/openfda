@@ -117,19 +117,23 @@ export function DetailForm({
                 onValueChange={(v) => setCategory(v as AllergyCategory)}
                 className="flex gap-4"
               >
-                {(["drug", "food", "custom"] as const).map((cat) => (
-                  <Label
-                    key={cat}
-                    className="flex items-center gap-2 text-sm cursor-pointer"
-                  >
-                    <RadioGroupItem value={cat} />
-                    {cat === "drug"
-                      ? "Drug"
-                      : cat === "food"
-                        ? "Food"
-                        : "Other"}
-                  </Label>
-                ))}
+                {(["drug", "food", "environmental", "custom"] as const).map(
+                  (cat) => (
+                    <Label
+                      key={cat}
+                      className="flex items-center gap-2 text-sm cursor-pointer"
+                    >
+                      <RadioGroupItem value={cat} />
+                      {cat === "drug"
+                        ? "Drug"
+                        : cat === "food"
+                          ? "Food"
+                          : cat === "environmental"
+                            ? "Environmental"
+                            : "Other"}
+                    </Label>
+                  )
+                )}
               </RadioGroup>
             </div>
           )}
@@ -140,7 +144,9 @@ export function DetailForm({
           {/* Reactions */}
           <ReactionCheckboxes
             substanceName={
-              category === "drug" ? substanceName || undefined : undefined
+              category === "drug" || category === "environmental"
+                ? substanceName || undefined
+                : undefined
             }
             selected={reactions}
             onChange={setReactions}
@@ -193,7 +199,7 @@ export function DetailForm({
           </div>
 
           {/* FDA Insights */}
-          {category === "drug" && (
+          {(category === "drug" || category === "environmental") && (
             <FdaInsightsPanel substanceName={substanceName || undefined} />
           )}
 

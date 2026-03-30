@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { CountResult } from "../types";
-import {
-  getReactionsForDrug,
-  getEventCountForDrug,
-} from "../openfda-queries";
+import type { CountResult, LabelWarningData } from "../types";
+import { getAllergenInsights } from "../openfda-queries";
 
 export function useFdaInsights(substanceName: string | undefined) {
   const [reactions, setReactions] = useState<CountResult[]>([]);
   const [totalEvents, setTotalEvents] = useState(0);
+  const [labelWarnings, setLabelWarnings] = useState<LabelWarningData | null>(
+    null
+  );
   const [isLoading, setIsLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -17,6 +17,7 @@ export function useFdaInsights(substanceName: string | undefined) {
     if (!substanceName) {
       setReactions([]);
       setTotalEvents(0);
+      setLabelWarnings(null);
       return;
     }
 
@@ -25,20 +26,27 @@ export function useFdaInsights(substanceName: string | undefined) {
     abortRef.current = controller;
     setIsLoading(true);
 
-    Promise.allSettled([
-      getReactionsForDrug(substanceName, controller.signal),
-      getEventCountForDrug(substanceName, controller.signal),
-    ]).then(([rxns, count]) => {
-      if (controller.signal.aborted) return;
-      setReactions(rxns.status === "fulfilled" ? rxns.value : []);
-      setTotalEvents(count.status === "fulfilled" ? count.value : 0);
-      setIsLoading(false);
-    });
+    getAllergenInsights(substanceName, controller.signal)
+      .then((insights) => {
+        if (controller.signal.aborted) return;
+        setReactions(insights.reactions);
+        setTotalEvents(insights.totalEvents);
+        setLabelWarnings(insights.labelWarnings);
+        setIsLoading(false);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setReactions([]);
+          setTotalEvents(0);
+          setLabelWarnings(null);
+          setIsLoading(false);
+        }
+      });
 
     return () => {
       abortRef.current?.abort();
     };
   }, [substanceName]);
 
-  return { reactions, totalEvents, isLoading };
+  return { reactions, totalEvents, labelWarnings, isLoading };
 }
